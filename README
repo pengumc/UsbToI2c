@@ -1,1 +1,4 @@
-hi
+Usb -> I2C
+used to send 12 bytes from a host PC, over usb through an atmega, to an I2C bus
+
+bin/commandline.exe : cmdline utility for win32 systems (requires libusb devel-filter)
