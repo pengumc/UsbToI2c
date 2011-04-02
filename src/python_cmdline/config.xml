@@ -1,0 +1,28 @@
+<config>
+	<device>
+		<VID>0x16c0</VID>
+		<PID>0x5df</PID>
+		<req>2</req>
+		<req>4</req>
+		<req>5</req>
+		<req>6</req>
+		<req>7</req>
+		<max_pulse>96</max_pulse>
+		<min_pulse>48</min_pulse>
+		<servo_amount>12</servo_amount>
+		<startpos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+			<pos>72</pos>
+		</startpos>
+	</device>
+</config>
