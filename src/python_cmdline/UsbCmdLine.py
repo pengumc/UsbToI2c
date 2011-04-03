@@ -10,6 +10,7 @@
 
 
 import usb.core
+import sys
 from xml.etree.ElementTree import ElementTree
 
 class UsbAdapter:
@@ -53,24 +54,44 @@ class UsbAdapter:
         else:
             return 0
     
-    def send_ctrl_transfer(self, endpoint, request, servo=0, pos=0):
+    def send_ctrl_transfer(self, endpoint, request, servo=0, pos=0, cmd=0):
         if self._dev is None:
            return 1
-        try:
-            data = self._dev.ctrl_transfer(
-                self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE | endpoint,
-                request,
-                servo,
-                pos,
-                self.servoAmount,
-                1000)
-        except usb.core.USBError as e:
-            print(e)
-        else:
-             print(data)
-    
+        if endpoint is self._USB_ENDPOINT_IN:
+            try:
+                data = self._dev.ctrl_transfer(
+                    self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE | endpoint,
+                    request,
+                    servo,
+                    pos,
+                    self.servoAmount,
+                    1000)
+            except usb.core.USBError as e:
+                print(e)
+            else:
+                 print(data)
+
+        if endpoint is self._USB_ENDPOINT_OUT:
+            zero = bytearray(12)
+            for i in range(12):
+                zero[i] = cmd
+            try:
+                cnt = self._dev.ctrl_transfer(
+                    self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE | endpoint,
+                    request,
+                    servo,
+                    pos,
+#                    self._buffer,
+                    zero,
+                    1000)
+            except usb.core.USBError as e:
+                print(e)
+            else:
+                print("send %s bytes" % (len(self._buffer)))
+                print zero[0]
+
 #-----------------------------------------------------------------------------
 x = UsbAdapter()
 x.load_xml("config.xml")
 x.connect()
-x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_IN,2)
+x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_OUT,3, cmd= int(sys.argv[1]))
