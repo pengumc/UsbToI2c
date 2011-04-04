@@ -94,4 +94,4 @@ class UsbAdapter:
 x = UsbAdapter()
 x.load_xml("config.xml")
 x.connect()
-x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_OUT,3, cmd= int(sys.argv[1]))
+x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_IN,int(sys.argv[1]))

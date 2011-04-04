@@ -31,4 +31,9 @@
 #define CUSTOM_RQ_SET_DATA 3
 
 #define CUSTOM_RQ_RESET 4
+
+#define CUSTOM_RQ_LOAD_POS_FROM_I2C 5
+
+#define CUSTOM_RQ_GET_POS 6
+
 #endif /* __REQUESTS_H_INCLUDED__ */
