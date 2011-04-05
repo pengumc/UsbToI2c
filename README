@@ -6,4 +6,4 @@ This device is meant to be used with the Servocontroller (different repository)
 bin/commandline.exe : cmdline utility for win32 systems (requires libusb devel-filter) discontinued (switching to python)
 
 src/python_cmdline/UsbCmdLine.py : python commandline utility, unfinished
-
+note: requires pyUsb 1.0 or higher (lower versions installed via a package manager appear to break stuff)
