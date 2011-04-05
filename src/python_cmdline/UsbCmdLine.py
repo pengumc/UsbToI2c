@@ -58,9 +58,11 @@ class UsbAdapter:
         if self._dev is None:
            return 1
         if endpoint is self._USB_ENDPOINT_IN:
+            print "hi"
             try:
                 data = self._dev.ctrl_transfer(
-                    self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE | endpoint,
+                    self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE |
+										self._USB_ENDPOINT_IN,
                     request,
                     servo,
                     pos,
@@ -77,7 +79,8 @@ class UsbAdapter:
                 zero[i] = cmd
             try:
                 cnt = self._dev.ctrl_transfer(
-                    self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE | endpoint,
+                    self._USB_TYPE_VENDOR | self._USB_RECIP_DEVICE | 
+										self._USB_ENDPOINT_OUT,
                     request,
                     servo,
                     pos,
@@ -94,4 +97,11 @@ class UsbAdapter:
 x = UsbAdapter()
 x.load_xml("config.xml")
 x.connect()
-x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_IN,int(sys.argv[1]))
+cmd =0
+if len(sys.argv) > 3:
+    cmd = int(sys.argv[3]);
+if sys.argv[1] == "in":
+    print sys.argv[1]
+    x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_IN,int(sys.argv[2]))
+elif sys.argv[1] == "out":
+    x.send_ctrl_transfer(UsbAdapter._USB_ENDPOINT_OUT,int(sys.argv[2]), cmd=cmd)

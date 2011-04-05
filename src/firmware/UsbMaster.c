@@ -1,8 +1,10 @@
-//name: slave2
+//name: usbMaster
 //Author: Michiel van der Coelen
 //contact: Michiel.van.der.coelen at gmail.com
-//date: 2011-04-01
+//date: wip
 //tabsize: 2
+//usb to I2C relay station
+//To be used with the I2C servocontroller
 
 
 //MCU = atmega88
@@ -17,12 +19,11 @@
 #include <avr/interrupt.h>
 #include <util/delay.h> 
 
-#include <avr/pgmspace.h>   /* required by usbdrv.h */
+#include <avr/pgmspace.h>   
 #include "usbdrv.h"
 #include "requests.h"       /* The custom request numbers */
 
-
-#include "i2c_header.h"
+#include "i2c_header.h" //defenitions for buffer lengths and addresses
 
 #define SET(x,y) (x|=(1<<y))
 #define CLR(x,y) (x&=(~(1<<y)))
@@ -30,9 +31,9 @@
 #define TOG(x,y) (x^=(1<<y))
 
 
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 //Global Variables
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 uint8_t TWS=0;
 uint8_t r_index =0;
 uint8_t recv[BUFLEN_SERVO_DATA];
@@ -43,7 +44,6 @@ uint8_t mode = 0;
 //1: write buffer to I2C
 //2: read from I2C
 uint8_t reset =0;
-uint8_t data_acked;
 #define NUMBER_OF_ADC_CHANNELS 2
 uint8_t adc[NUMBER_OF_ADC_CHANNELS]; //buffer to store adc values
 uint8_t mux = 0;
@@ -51,9 +51,9 @@ uint8_t ad_count;
 
 void (*jump_to_boot)(void) = 0x0C00;
 
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 //Functions
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 PROGMEM char usbHidReportDescriptor[22] = {    /* USB report descriptor */
     0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
     0x09, 0x01,                    // USAGE (Vendor Usage 1)
@@ -71,26 +71,26 @@ uint8_t buffer_pos;
 #define USB_MSG_LENGTH BUFLEN_SERVO_DATA +1
 usbMsgLen_t usbFunctionSetup(uchar data[8]){
 	register uint8_t i;
-	static uchar dataBuffer[USB_MSG_LENGTH];     /* buffer must stay valid when usbFunctionSetup returns */
+	static uchar dataBuffer[USB_MSG_LENGTH];
 	usbRequest_t    *rq = (void *)data;
 	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR){
 		switch(rq->bRequest){
 		case CUSTOM_RQ_GET_DATA:
-			dataBuffer[0] = data_acked;
-      dataBuffer[1] = adc[0];
-			dataBuffer[2] = adc[1];
+			dataBuffer[0] = adc[0];
+      dataBuffer[1] = adc[1];
+			dataBuffer[2] = TWS;
 			dataBuffer[3] = 0;
 			dataBuffer[4] = 0;
-			dataBuffer[5] = TWS;
-			dataBuffer[6] = tran[0];
-			usbMsgPtr = dataBuffer;         /* tell the driver which data to return */
-			return USB_MSG_LENGTH;                       /* tell the driver to send 1 byte */
+			dataBuffer[5] = 0;
+			dataBuffer[6] = 0;
+			usbMsgPtr = dataBuffer;
+			return USB_MSG_LENGTH; 
 		case CUSTOM_RQ_GET_POS:
-			if(mode){
+			if(mode==2){
 				for(i=0;i<BUFLEN_SERVO_DATA;i++){
 					dataBuffer[i] = CUSTOM_RQ_GET_POS; 
 					//returning the buffer filled with the request
-					//indicates we haven't received to data from I2C yet
+					//indicates we're busy with reading from I2C
 				}
 			}else{
 				for(i=0;i<BUFLEN_SERVO_DATA;i++){
@@ -107,7 +107,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]){
 				usbMsgPtr = dataBuffer;
 				return USB_MSG_LENGTH;		
 			}else{
-				mode = 0;
+				mode = 2;
 				return 0;
 			}
 		case CUSTOM_RQ_RESET:
@@ -119,7 +119,7 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]){
 			return USB_NO_MSG;
 		}
 	}
-	return 0;   /* default for not implemented requests: return no data back to host */
+	return 0;   
 }
 
 uchar usbFunctionWrite(uchar * data, uchar len){
@@ -152,7 +152,7 @@ void I2Cmaster(){
 			}
 			TWACK;
 			break;
-//--------------- MT ----------------------------------------------------------
+//--------------- MT ---------------------------------------------------------
 		case 0x18: // SLA_W acked
 			//load first data
 			TWDR = tran[0];
@@ -180,7 +180,7 @@ void I2Cmaster(){
       TWCR = 0;
       TWSTART;
       break;
-//-------------------------MR -------------------------------------------------
+//-------------------------MR ------------------------------------------------
 		case 0x40:	//SLA_R acked, get ready for data
 			TWACK;
 			break;
@@ -203,7 +203,7 @@ void I2Cmaster(){
 			mode =0;
 			break;
 			
-//--------------------- bus error----------------------------------------------
+//--------------------- bus error---------------------------------------------
     case 0x00:
       TWRESET;
       ;
@@ -223,9 +223,9 @@ while(--i){
 usbDeviceConnect();
 
 }
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 //MAIN
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 //usb initialization
 int main() {
 wdt_enable(WDTO_1S);
@@ -244,9 +244,9 @@ sei();
   SET(DDRB,PB0);
   SET(DDRB, PB0); //red
 
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 //MAIN LOOP
-//-----------------------------------------------------------------------------
+//----------------------------------------------------------------------------
 while(1){
 	//reset if necessary
 	if(!reset) wdt_reset();
@@ -257,17 +257,18 @@ while(1){
 	//handle usb requests
 	usbPoll();
 	
-	//jump to bootloader when D6 is pulled high
-  if(CHK(PIND,PD6)){
-		TCCR1B =0;
-		TIMSK1 =0;
-		jump_to_boot();
-	}
+
+	//jump to bootloader when D6 is pulled high, not used atm
+  // if(CHK(PIND,PD6)){
+		// TCCR1B =0;
+		// TIMSK1 =0;
+		// jump_to_boot();
+	// }
 
 	}//main loop end
 }//main end
 
 ISR(TIMER1_COMPA_vect){
-  CLR(PORTD,PD7); //green
-	CLR(PORTB,PB0); //red
+	CLR(PORTD,PD7); //green
+	//CLR(PORTB,PB0); //red
 }
