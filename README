@@ -1,4 +1,9 @@
 Usb -> I2C
 used to send 12 bytes from a host PC, over usb through an atmega, to an I2C bus
+This device is meant to be used with the Servocontroller (different repository)
 
-bin/commandline.exe : cmdline utility for win32 systems (requires libusb devel-filter)
+
+bin/commandline.exe : cmdline utility for win32 systems (requires libusb devel-filter) discontinued (switching to python)
+
+src/python_cmdline/UsbCmdLine.py : python commandline utility, unfinished
+
