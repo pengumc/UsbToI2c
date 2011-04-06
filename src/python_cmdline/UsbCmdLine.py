@@ -42,6 +42,8 @@ class UsbAdapter:
         self._VID = None
         self._PID = None
         self._dev = None
+        self._hxErr = 0#[0.0, 0.0, 0.0, 0.0]
+        self._vxErr = [0.0, 0.0, 0.0, 0.0]
     
     def load_xml(self, fileName):
         tree = ElementTree(file=fileName)
@@ -59,7 +61,6 @@ class UsbAdapter:
         lengths = devices.find("leglength").findall("cm")
         for i in range(len(lengths)):
             self._lengths.append(float(lengths[i].text))
-
         
     def connect(self):
         self._dev = usb.core.find(idVendor=self._VID, idProduct=self._PID)
@@ -139,32 +140,19 @@ class UsbAdapter:
             self._buffer[i]= self._I2CCMD_LOAD_STARTPOS
         self.send_ctrl_transfer("out", self._USBRQ_SET_DATA)
 
-    def up(self, leg, amount=1, direction=1.0):
-        A = leg * 3 + 1
-        B = leg * 3 + 2
-        #up beta
-        if leg%2:
-            self._buffer[A] += int(amount*direction)
+    def angle(self, servo):
+        if servo == 2: #2 5 8 11 special case
+            return (72- self._buffer[servo]) * self._K - (pi/2)
+        elif servo == 5:
+            return (72 - self._buffer[servo]) * self._K - (pi/2)
+        elif servo == 8:
+            return 0
+        elif servo == 11:
+            return 0
         else:
-            self._buffer[A] -= int(amount*direction)
-        #calculate angle beta
-        beta = (self._buffer[A] - 72) * self._K
-        print("beta = " + str(beta))
-        #angle gamma
-        gamma = (72 - self._buffer[B]) * self._K - (pi/2)
-        print("gamma = " + str(gamma))
-        #calculate x
-        posx = math.cos(beta) * self._lengths[A]
-        + math.cos(beta + gamma) * self._lengths[B]
-        print("x = " + str(posx))
-        #calc required gamma
-        gammareq = -math.acos( (posx - self._lengths[A] * math.cos(beta)) /
-                              self._lengths[B] ) - beta
-        print("gammareq = " +str(gammareq))
-        #gammareq -> servo pos
-        self._buffer[B] = int(72-((gammareq +pi/2)/ self._K))
-        print("new B = " + str(self._buffer[B]))
+            return (self._buffer[servo] - 72) * self._K
 
+        
     def get_pos(self):        
         self.send_ctrl_transfer("in", self._USBRQ_LOAD_POS_FROM_I2C)
         self.send_ctrl_transfer("in", self._USBRQ_GET_POS)
@@ -172,7 +160,97 @@ class UsbAdapter:
 
     def send_pos(self):
         self.send_ctrl_transfer("out", self._USBRQ_SET_DATA)
-    
+
+    def get_hx(self, leg0):
+        a = self.angle(leg * 3)
+        b = self.angle(leg * 3 + 1)
+        c = self.angle(leg * 3 + 2)
+        A = self._lengths[leg * 3]
+        B = self._lengths[leg * 3 + 1]
+        C = self._lengths[leg * 3 + 2]
+        x = math.cos(a) * (A + math.cos(b)*B + math.cos(c+b)*C)
+        return x    
+
+    def get_vx(self, leg):
+        b = self.angle(leg * 3 + 1)
+        c = self.angle(leg * 3 + 2)
+        B = self._lengths[leg * 3 + 1]
+        C = self._lengths[leg * 3 + 2]
+        x = (math.cos(b)*B + math.cos(c+b)*C)
+        return x    
+
+    def up(self, leg=0, amount = 1.0):
+        if leg%2:
+            B = self._lengths[leg * 3 + 1]
+            C = self._lengths[leg * 3 + 2]
+
+            x = self.get_vx(leg)
+            print "---"
+            print x
+            print self._vxErr[leg]
+            x -= self._vxErr[leg]
+            print x 
+            self._buffer[leg * 3 + 1] += int(amount)
+            b = self.angle(leg * 3 + 1)
+            gamma = -(math.acos( (x - B * math.cos(b)) / C ) - b)
+#            print gamma
+            self._buffer[leg*3+2] = int((gamma + pi/2) / self._K)+72
+            
+            #save error
+            self._vxErr[leg] = self.get_vx(leg) - x
+
+        else:
+            #get current x
+            x = self.get_vx(leg) - self._vxErr[leg]
+            #print x
+            #increase beta
+            self._buffer[leg * 3 + 1] -= int(amount)
+            #calculate gamma with old x
+            b = self.angle(leg * 3 + 1)
+            B = self._lengths[leg * 3 + 1]
+            C = self._lengths[leg * 3 + 2]
+            gamma = -math.acos( (x - B * math.cos(b)) / C ) - b
+            #print gamma
+            #update servo
+            self._buffer[leg * 3 + 2] = int(72 - (gamma + pi/2) / self._K)
+            #save error
+            self._vxErr[leg] = self.get_vx(leg) - x 
+
+    def clear_errors(self):
+        self._vxErr = [0.0, 0.0, 0.0, 0.0]
+        self._hxErr = [0.0, 0.0, 0.0, 0.0]
+            
+    def forward(self, leg=0, amount = 1.0):
+        print "---"
+        print self._hxErr
+        x = self.get_hx(0) - self._hxErr
+        print self.angle(0)
+        print x
+        print ""
+        self._buffer[0] += 1
+        print self.angle(0)
+        print self.get_x(0)
+        print ""
+        a = self.angle(0)
+        b = self.angle(1)
+        A = self._lengths[0]
+        B = self._lengths[1]
+        C = self._lengths[2]
+        gamma = -math.acos( (x ) / (C * math.cos(a))
+                           - A / C
+                           - B * math.cos(b) / C
+                           ) - b
+        print gamma
+        self._buffer[2] = int(72-(gamma + pi/2)/self._K)
+        print( 72-(gamma+pi/2)/self._K)
+        print ""
+        oldX = x
+        x= self.get_hx(0)
+        print x
+        self._hxErr = x - oldX
+        print self._hxErr
+        print"---"
+
 #-----------------------------------------------------------------------------
 x = UsbAdapter()
 x.load_xml("config.xml")
@@ -201,17 +279,33 @@ elif sys.argv[1] == "seta":
     x.set_all(int(sys.argv[2]))
 
 elif sys.argv[1] == "up":
-    for i in range(5):
-        x.get_pos()
-        x.up(0,2)
-        x.up(1,2)
+    x.get_pos()
+    for i in range(10):
+        x.up(0,1)
+        x.up(1,1)
         x.send_pos()
-        time.sleep(0.2)
+        time.sleep(0.3)
 
 elif sys.argv[1] == "down":
-    for i in range(5):
-        x.get_pos()
-        x.up(0,-2)
-        x.up(1,-2)
+    x.get_pos()
+    for i in range(10):
+        x.up(0,-1)
+        x.up(1,-1)
         x.send_pos()
-        time.sleep(0.2)
+        time.sleep(0.3)
+elif sys.argv[1] == "forward":
+    x.clear_errors()
+    x.get_pos()
+    for i in range(5):
+        x.forward(0,1)
+        #x.forward(1,1)
+        x.send_pos()
+        time.sleep(0.3)
+elif sys.argv[1] == "backward":
+    x.clear_errors()
+    x.get_pos()
+    for i in range(5):
+        x.forward(0,-1)
+        #x.forward(1,-1)
+        x.send_pos()
+        time.sleep(0.3)
