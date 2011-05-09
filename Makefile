@@ -11,26 +11,26 @@ F_CPU = 20000000
 NAME = UsbMaster
 
 #for the love of god, keep the linking order!
-OBJECTS = usbdrv.o usbdrvasm.o oddebug.o $(NAME).o
-CFLAGS = -DF_CPU=$(F_CPU) -std=c99 -Wall -Os -mmcu=$(MMCU) -Ilib/usbdrv -I. -Isrc/
+OBJECTS = usbdrv.o usbdrvasm.o oddebug.o $(NAME).o controller.o
+CFLAGS = -DF_CPU=$(F_CPU) -std=c99 -Wall -Os -mmcu=$(MMCU) -Ilib/usbdrv -I. -Isrc -Ilib
 CC = avr-gcc
 SIZE = avr-size
 OBJCOPY = avr-objcopy
 
-vpath %.c ./lib/usbdrv ./src/firmware
-vpath %.h ./lib/usbdrv 
+vpath %.c ./lib/usbdrv ./src/firmware ./lib
+vpath %.h ./lib/usbdrv ./lib
 vpath %.S ./lib/usbdrv 
 
 .PHONY: all clean test
-all: bin\$(NAME).hex
-	$(SIZE) bin\$(NAME).hex
+all: bin/$(NAME).hex
+	$(SIZE) bin/$(NAME).hex
 
 #rebuild everything!
 force: clean all
 
-bin\$(NAME).hex: $(NAME).elf
-	$(OBJCOPY) -O ihex $(NAME).elf bin\$(NAME).hex
-	#rm -f $(OBJECTS) $(NAME).elf
+bin/$(NAME).hex: $(NAME).elf
+	$(OBJCOPY) -O ihex $(NAME).elf bin/$(NAME).hex
+	rm -f $(OBJECTS) $(NAME).elf
 	
 $(NAME).elf: $(OBJECTS)
 	$(CC) $(CFLAGS) -o $(NAME).elf $(OBJECTS)
@@ -46,8 +46,8 @@ $(NAME).elf: $(OBJECTS)
 clean:
 	rm -f $(OBJECTS) $(NAME).elf
 
-program: bin\$(NAME).hex
-	avrdude -c $(AVRDUDE_PROGRAMMERID) -p $(AVRDUDE_MCU) -U flash:w:bin\$(NAME).hex
+program: bin/$(NAME).hex
+	avrdude -c $(AVRDUDE_PROGRAMMERID) -p $(AVRDUDE_MCU) -U flash:w:bin/$(NAME).hex
 
 test:
 	avrdude -c $(AVRDUDE_PROGRAMMERID) -p $(AVRDUDE_MCU) -v
