@@ -264,9 +264,9 @@ while(1){
    POLL_CONTROLLER(&pscon);
    if(!CHK(pscon.Shoulder_Shapes,TRIANGLE)){
        SET(PORTB,PB0);
-//       SET_ANALOG(&pscon);
+       SET_ANALOG(&pscon);
    }else CLR(PORTB,PB0);
-    
+    DelaySmall;        
 
   //only continue I2C transmission if there's a change to be send
     if(mode) I2Cmaster();

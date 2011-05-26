@@ -82,7 +82,7 @@ struct CONTROLLER_DATA {
   uint8_t _mode;
   uint8_t SS_Dpad;
   uint8_t Shoulder_Shapes;
-  uint8_t previous_SS_Dpad; //useful for single push operation
+  uint8_t previous_SS_Dpad;
   uint8_t previous_Shoulder_Shapes;
   uint8_t Rx;
   uint8_t Ry;

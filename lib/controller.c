@@ -28,7 +28,7 @@ void POLL_CONTROLLER(struct CONTROLLER_DATA* cdat){
   cdat->Lx = CONTROLLER_BYTE(C_IDLE);
   cdat->Ly = CONTROLLER_BYTE(C_IDLE);
   SET(C_PORT,ATT);
-  //DelayCom;
+  DelayCom;
 }
 
 
