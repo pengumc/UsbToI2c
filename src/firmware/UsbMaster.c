@@ -90,6 +90,8 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]){
             dataBuffer[6] = pscon.Ry;
             dataBuffer[7] = pscon.Lx;
             dataBuffer[8] = pscon.Ly;
+            dataBuffer[9] = adc[0];
+            dataBuffer[10] = adc[1];
             usbMsgPtr = dataBuffer;
             return USB_MSG_LENGTH; 
         case CUSTOM_RQ_GET_POS:
@@ -248,6 +250,9 @@ reconnectUSB();
     TCCR1B |= (1<<WGM12)|(1<<CS11);
     TIMSK1 |= (1<<OCIE1A);
     OCR1A = 31250;
+//ADC
+    ADMUX = (1<<REFS0)|(1<<ADLAR); //use AVcc and adjust left (fill ADCH)
+    ADCSRA |= 0x07 | (1<<ADEN)|(1<<ADSC);//prescale clock  by 128    
 sei();
 //led
   SET(DDRD,PD7);
@@ -258,9 +263,10 @@ sei();
 //MAIN LOOP
 //----------------------------------------------------------------------------
 while(1){
-    //reset if necessary
+//reset if necessary
     if(!reset) wdt_reset();
-   
+
+//poll the playstation controller   
    POLL_CONTROLLER(&pscon);
    if(!CHK(pscon.Shoulder_Shapes,TRIANGLE)){
        SET(PORTB,PB0);
@@ -268,20 +274,25 @@ while(1){
    }else CLR(PORTB,PB0);
     DelaySmall;        
 
-  //only continue I2C transmission if there's a change to be send
+//only continue I2C transmission if there's a change to be send
     if(mode) I2Cmaster();
     if(mode == 2) SET(PORTD,PD7);
     else CLR(PORTD,PD7);
-    //handle usb requests
-    usbPoll();
-    
 
-    //jump to bootloader when D6 is pulled high, not used atm
-  // if(CHK(PIND,PD6)){
-        // TCCR1B =0;
-        // TIMSK1 =0;
-        // jump_to_boot();
-    // }
+//handle usb requests
+    usbPoll();
+
+//store ADC result and 
+//change channels if a conversion has been completed
+	if(!CHK(ADCSRA,ADSC)) {
+		adc[mux] = ADCH;
+		mux++;
+		if (mux == NUMBER_OF_ADC_CHANNELS) mux=0;
+		ADMUX &= 0xF0; //clear mux
+		ADMUX |= mux;
+		SET(ADCSRA,ADSC);//start next conversion
+	}
+    
 
     }//main loop end
 }//main end
