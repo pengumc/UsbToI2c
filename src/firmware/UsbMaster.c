@@ -84,14 +84,19 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]){
             dataBuffer[0] = mode;
             dataBuffer[1] = pscon.SS_Dpad;
             dataBuffer[2] = pscon.Shoulder_Shapes;
-            dataBuffer[3] = pscon.previous_SS_Dpad;
-            dataBuffer[4] = pscon.previous_Shoulder_Shapes;
-            dataBuffer[5] = pscon.Rx;
-            dataBuffer[6] = pscon.Ry;
-            dataBuffer[7] = pscon.Lx;
-            dataBuffer[8] = pscon.Ly;
-            dataBuffer[9] = adc[0];
-            dataBuffer[10] = adc[1];
+            dataBuffer[3] = adc[0];
+            dataBuffer[4] = adc[1];
+            if(HAS_VALID_ANALOG_DATA(&pscon)){
+                dataBuffer[5] = pscon.Rx;
+                dataBuffer[6] = pscon.Ry;
+                dataBuffer[7] = pscon.Lx;
+                dataBuffer[8] = pscon.Ly;
+            }else{
+                dataBuffer[5] = 128;
+                dataBuffer[6] = 128;
+                dataBuffer[7] = 128;
+                dataBuffer[8] = 128;
+            }
             usbMsgPtr = dataBuffer;
             return USB_MSG_LENGTH; 
         case CUSTOM_RQ_GET_POS:
@@ -251,7 +256,7 @@ reconnectUSB();
     TIMSK1 |= (1<<OCIE1A);
     OCR1A = 31250;
 //ADC
-    ADMUX = (1<<REFS0)|(1<<ADLAR); //use AVcc and adjust left (fill ADCH)
+    ADMUX = 0x20;//(0<<REFS0)|(1<<ADLAR); //use AREF and adjust left (fill ADCH)
     ADCSRA |= 0x07 | (1<<ADEN)|(1<<ADSC);//prescale clock  by 128    
 sei();
 //led

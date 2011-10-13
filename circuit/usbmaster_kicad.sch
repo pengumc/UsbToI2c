@@ -1,0 +1,597 @@
+EESchema Schematic File Version 1
+LIBS:atmel,capacitor-wima,con-berg,crystal,diode,led,pinhead,rcl,resistor,supply1,.\usbmaster_kicad-cache-cache
+EELAYER 23 0
+EELAYER END
+$Descr A4 11700 8267
+Sheet 1 1
+Title "usbmaster.sch"
+Date "27 JUL 2011"
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+Text Notes 5710 1468 0 70 ~
+X-axis
+Text Notes 5010 2168 0 70 ~
+y-axis
+$Comp
+L +3V3_+3V3 +3V1
+U 1 1 4E3001C8
+P 6210 1468
+F 0 "+3V3" V 6111 1268 70 0000 L B
+	1    6210 1468
+	0    1    1    0   
+$EndComp
+$Comp
+L JP_PINHD-2X5 ADXL335
+U 1 1 4E3001C8
+P 5810 1968
+F 0 "ADXL335" H 5560 2293 70 0000 L B
+	1    5810 1968
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C_C C1
+U 1 1 4E3001C8
+P 1810 2068
+F 0 "C1" H 1870 2083 70 0000 L B
+F 1 "22p" H 1870 1883 70 0000 L B
+	1    1810 2068
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C_C C2
+U 1 1 4E3001C8
+P 1810 2268
+F 0 "C2" H 1870 2283 70 0000 L B
+F 1 "22p" H 1870 2083 70 0000 L B
+	1    1810 2268
+	0    -1   1    0   
+$EndComp
+$Comp
+L C_C C3
+U 1 1 4E3001C8
+P 7010 1668
+F 0 "C3" H 7070 1683 70 0000 L B
+F 1 "22p" H 7070 1483 70 0000 L B
+	1    7010 1668
+	0    -1   -1   0   
+$EndComp
+$Comp
+L C_C C4
+U 1 1 4E3001C8
+P 7010 1868
+F 0 "C4" H 7070 1883 70 0000 L B
+F 1 "22p" H 7070 1683 70 0000 L B
+	1    7010 1868
+	0    -1   1    0   
+$EndComp
+$Comp
+L C_CPOL-EU C5
+U 1 1 4E3001C8
+P 7210 6968
+F 0 "C5" H 7255 6986 70 0000 L B
+F 1 "4u7" H 7254 6787 70 0000 L B
+	1    7210 6968
+	1    0    0    -1  
+$EndComp
+$Comp
+L D_ZENER-DIODE D1
+U 1 1 4E3001C8
+P 5910 6168
+F 0 "D1" H 5710 6203 70 0000 L B
+F 1 "3V6" H 6030 6192 70 0000 L B
+	1    5910 6168
+	1    0    0    -1  
+$EndComp
+$Comp
+L D_ZENER-DIODE D2
+U 1 1 4E3001C8
+P 5910 6368
+F 0 "D2" H 5710 6393 70 0000 L B
+F 1 "3V6" H 6040 6392 70 0000 L B
+	1    5910 6368
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND_GND GND1
+U 1 1 4E3001C8
+P 1410 5368
+F 0 "GND" H 1310 5268 70 0000 L B
+	1    1410 5368
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND_GND GND4
+U 1 1 4E3001C8
+P 7210 7368
+F 0 "GND" H 7110 7268 70 0000 L B
+	1    7210 7368
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND_GND GND5
+U 1 1 4E3001C8
+P 5610 7368
+F 0 "GND" H 5510 7268 70 0000 L B
+	1    5610 7368
+	-1   0    0    -1  
+$EndComp
+$Comp
+L IC_MEGA8-P IC1
+U 1 1 4E3001C8
+P 3110 2468
+F 0 "IC1" H 2410 1068 70 0000 L B
+F 1 "MEGA8-P" H 2411 3718 70 0000 L B
+	1    3110 2468
+	1    0    0    -1  
+$EndComp
+$Comp
+L IC_MEGA32-P IC2
+U 1 1 4E3001C8
+P 8110 3068
+F 0 "IC2" H 7511 4898 70 0000 L B
+F 1 "MEGA32-P" H 7510 1168 70 0000 L B
+	1    8110 3068
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED_LED LED_GREEN1
+U 1 1 4E3001C8
+P 5010 4068
+F 0 "LED_GREEN1" V 5150 3888 70 0000 L B
+	1    5010 4068
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED_LED LED_GREEN2
+U 1 1 4E3001C8
+P 10210 4368
+F 0 "LED_GREEN2" V 10350 4188 70 0000 L B
+	1    10210 4368
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED_LED LED_RED1
+U 1 1 4E3001C8
+P 4610 4068
+F 0 "LED_RED1" V 4750 3888 70 0000 L B
+	1    4610 4068
+	1    0    0    -1  
+$EndComp
+$Comp
+L LED_LED LED_RED2
+U 1 1 4E3001C8
+P 9510 4468
+F 0 "LED_RED2" V 9650 4288 70 0000 L B
+	1    9510 4468
+	1    0    0    -1  
+$EndComp
+$Comp
+L P+_+5V P+1
+U 1 1 4E3001C8
+P 1410 868
+F 0 "+5V" V 1310 668 70 0000 L B
+	1    1410 868 
+	1    0    0    -1  
+$EndComp
+$Comp
+L P+_+5V P+5
+U 1 1 4E3001C8
+P 7210 6168
+F 0 "+5V" V 7110 5968 70 0000 L B
+	1    7210 6168
+	1    0    0    -1  
+$EndComp
+$Comp
+L Q_CRYSTAL Q1
+U 1 1 4E3001C8
+P 2210 2168
+F 0 "Q1" H 2310 2208 70 0000 L B
+F 1 "20MHz" H 2310 2068 70 0000 L B
+F 2 "1" H 2125 2123 34 0000 L B
+F 3 "2" H 2270 2123 34 0000 L B
+	1    2210 2168
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Q_CRYSTAL Q2
+U 1 1 4E3001C8
+P 7310 1768
+F 0 "Q2" H 7410 1808 70 0000 L B
+F 1 "12MHz" H 7410 1668 70 0000 L B
+F 2 "1" H 7225 1723 34 0000 L B
+F 3 "2" H 7370 1723 34 0000 L B
+	1    7310 1768
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R1
+U 1 1 4E3001C8
+P 2110 1168
+F 0 "R1" H 1960 1227 70 0000 L B
+	1    2110 1168
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R2
+U 1 1 4E3001C8
+P 4810 1268
+F 0 "R2" H 4660 1327 70 0000 L B
+	1    4810 1268
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R3
+U 1 1 4E3001C8
+P 4910 1468
+F 0 "R3" H 4760 1527 70 0000 L B
+	1    4910 1468
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R4
+U 1 1 4E3001C8
+P 6610 1368
+F 0 "R4" H 6460 1427 70 0000 L B
+	1    6610 1368
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R5
+U 1 1 4E3001C8
+P 4610 4468
+F 0 "R5" H 4460 4527 70 0000 L B
+F 1 "468" H 4460 4338 70 0000 L B
+	1    4610 4468
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R6
+U 1 1 4E3001C8
+P 5010 4468
+F 0 "R6" H 4860 4527 70 0000 L B
+F 1 "468" H 4860 4338 70 0000 L B
+	1    5010 4468
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R7
+U 1 1 4E3001C8
+P 9510 4868
+F 0 "R7" H 9360 4927 70 0000 L B
+F 1 "468" H 9360 4738 70 0000 L B
+	1    9510 4868
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R8
+U 1 1 4E3001C8
+P 10210 4768
+F 0 "R8" H 10060 4827 70 0000 L B
+F 1 "468" H 10060 4638 70 0000 L B
+	1    10210 4768
+	0    -1   -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R9
+U 1 1 4E3001C8
+P 6410 5268
+F 0 "R9" H 6260 5327 70 0000 L B
+F 1 "68" H 6260 5138 70 0000 L B
+	1    6410 5268
+	0    1    -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R10
+U 1 1 4E3001C8
+P 6310 5668
+F 0 "R10" H 6160 5727 70 0000 L B
+F 1 "68" H 6160 5538 70 0000 L B
+	1    6310 5668
+	0    1    -1   0   
+$EndComp
+$Comp
+L R_R-EU_ R11
+U 1 1 4E3001C8
+P 6610 5968
+F 0 "R11" H 6460 6027 70 0000 L B
+F 1 "2k2" H 6460 5838 70 0000 L B
+	1    6610 5968
+	-1   0    0    -1  
+$EndComp
+$Comp
+L JP_PINHD-1X12 SERVO_1..12
+U 1 1 4E3001C8
+P 10210 1968
+F 0 "SERVO_1..12" H 9960 2593 70 0000 L B
+	1    10210 1968
+	-1   0    0    1   
+$EndComp
+$Comp
+L X_PN61729 X1
+U 1 1 4E3001C8
+P 6310 7168
+F 0 "X1" H 6310 7518 70 0000 L B
+	1    6310 7168
+	0    1    1    0   
+$EndComp
+Wire Wire Line
+5810 1768 5810 1468
+Wire Wire Line
+5810 1468 6110 1468
+Wire Wire Line
+4810 968 4810 1068
+Wire Wire Line
+6610 968 6610 1168
+Wire Wire Line
+4910 1268 4910 968
+Wire Wire Line
+4910 968 6610 968
+Wire Wire Line
+4910 968 4810 968
+Wire Wire Line
+2110 968 4810 968
+Wire Wire Line
+1610 968 2110 968
+Wire Wire Line
+2210 1768 1610 1768
+Wire Wire Line
+1610 1768 1610 968
+Wire Wire Line
+1510 968 1410 968
+Wire Wire Line
+1510 968 1610 968
+Wire Wire Line
+2210 2768 1510 2768
+Wire Wire Line
+1510 2768 1510 968
+Wire Wire Line
+7310 2468 6710 2468
+Wire Wire Line
+6710 2468 6710 968
+Wire Wire Line
+6710 968 6610 968
+Connection ~ 4810 968
+Connection ~ 2110 968
+Connection ~ 1610 968
+Connection ~ 1510 968
+Connection ~ 6610 968
+Wire Wire Line
+6510 7068 6510 6668
+Wire Wire Line
+6510 6668 6910 6668
+Wire Wire Line
+6910 6668 7210 6668
+Wire Wire Line
+7210 6868 7210 6668
+Wire Wire Line
+7210 6268 7210 6668
+Wire Wire Line
+6810 5968 6910 5968
+Wire Wire Line
+6910 5968 6910 6668
+Connection ~ 7210 6668
+Connection ~ 6910 6668
+Wire Wire Line
+10210 5068 10210 4968
+Wire Wire Line
+9510 5068 10210 5068
+Wire Wire Line
+7310 2568 6910 2568
+Wire Wire Line
+7310 2268 6910 2268
+Wire Wire Line
+6910 1668 6910 1868
+Wire Wire Line
+6910 1868 6910 2268
+Wire Wire Line
+6910 2268 6910 2568
+Wire Wire Line
+6910 2568 6910 5068
+Wire Wire Line
+6910 5068 9510 5068
+Wire Wire Line
+6910 5068 5810 5068
+Wire Wire Line
+5810 5068 5010 5068
+Wire Wire Line
+5010 4668 5010 5068
+Wire Wire Line
+5010 5068 4610 5068
+Wire Wire Line
+4610 5068 4610 4668
+Wire Wire Line
+4610 5068 5810 5068
+Wire Wire Line
+5810 2068 5810 5068
+Wire Wire Line
+5810 5068 1710 5068
+Wire Wire Line
+1710 5068 1410 5068
+Wire Wire Line
+1410 5068 1410 5268
+Wire Wire Line
+2210 1568 1710 1568
+Wire Wire Line
+1710 1568 1710 2068
+Wire Wire Line
+1710 2068 1710 2268
+Wire Wire Line
+1710 2268 1710 5068
+Connection ~ 10210 5068
+Connection ~ 9510 5068
+Connection ~ 6910 1668
+Connection ~ 6910 1868
+Connection ~ 6910 2268
+Connection ~ 6910 2568
+Connection ~ 5010 5068
+Connection ~ 4610 5068
+Connection ~ 5810 5068
+Connection ~ 1410 5068
+Connection ~ 1710 2068
+Connection ~ 1710 2268
+Wire Wire Line
+7210 7268 7210 7168
+Wire Wire Line
+5810 6168 5610 6168
+Wire Wire Line
+6210 7068 6210 6668
+Wire Wire Line
+6210 6668 5610 6668
+Wire Wire Line
+5610 6668 5610 7268
+Wire Wire Line
+5610 6168 5610 6368
+Wire Wire Line
+5610 6368 5610 6668
+Wire Wire Line
+5610 6368 5810 6368
+Connection ~ 5610 6368
+Connection ~ 5610 6668
+Wire Wire Line
+4910 1668 4910 1868
+Wire Wire Line
+4910 1868 4110 1868
+Wire Wire Line
+8910 3868 9210 3868
+Wire Wire Line
+9210 3868 9210 1068
+Wire Wire Line
+9210 1068 5210 1068
+Wire Wire Line
+5210 1068 5210 1868
+Wire Wire Line
+5210 1868 4910 1868
+Connection ~ 4910 1868
+Wire Wire Line
+2110 1368 2210 1368
+Wire Wire Line
+2010 2068 2210 2068
+Connection ~ 2210 2068
+Wire Wire Line
+2010 2268 2210 2268
+Wire Wire Line
+4810 1468 4810 1768
+Wire Wire Line
+4810 1768 4110 1768
+Wire Wire Line
+4810 1768 5310 1768
+Wire Wire Line
+5310 1768 5310 1168
+Wire Wire Line
+5310 1168 9110 1168
+Wire Wire Line
+9110 1168 9110 3768
+Wire Wire Line
+9110 3768 8910 3768
+Connection ~ 4810 1768
+Wire Wire Line
+4210 2168 4210 1368
+Wire Wire Line
+4210 1368 4110 1368
+Wire Wire Line
+5710 2068 5710 2168
+Wire Wire Line
+5710 2168 4210 2168
+Wire Wire Line
+6810 1368 7310 1368
+Wire Wire Line
+6610 1568 6810 1568
+Wire Wire Line
+6810 1568 6810 1368
+Wire Wire Line
+7310 1668 7210 1668
+Connection ~ 7310 1668
+Wire Wire Line
+7310 1868 7210 1868
+Connection ~ 7310 1868
+Wire Wire Line
+5710 1768 5710 1468
+Wire Wire Line
+5710 1468 4110 1468
+Wire Wire Line
+8910 3668 10010 3668
+Wire Wire Line
+10010 3668 10010 2468
+Wire Wire Line
+10010 2468 10310 2468
+Wire Wire Line
+8910 3568 9910 3568
+Wire Wire Line
+9910 3568 9910 2368
+Wire Wire Line
+9910 2368 10310 2368
+Wire Wire Line
+8910 3468 9810 3468
+Wire Wire Line
+9810 3468 9810 2268
+Wire Wire Line
+9810 2268 10310 2268
+Wire Wire Line
+8910 3368 9710 3368
+Wire Wire Line
+9710 3368 9710 2168
+Wire Wire Line
+9710 2168 10310 2168
+Wire Wire Line
+10310 2068 8910 2068
+Wire Wire Line
+10310 1968 8910 1968
+Wire Wire Line
+10310 1868 8910 1868
+Wire Wire Line
+10310 1768 8910 1768
+Wire Wire Line
+10310 1668 8910 1668
+Wire Wire Line
+10310 1568 8910 1568
+Wire Wire Line
+10310 1468 8910 1468
+Wire Wire Line
+10310 1368 8910 1368
+Wire Wire Line
+4610 3968 4610 3168
+Wire Wire Line
+4610 3168 4110 3168
+Wire Wire Line
+5010 3968 5010 2968
+Wire Wire Line
+5010 2968 4110 2968
+Wire Wire Line
+9510 4368 9510 2968
+Wire Wire Line
+9510 2968 8910 2968
+Wire Wire Line
+8910 4068 10210 4068
+Wire Wire Line
+10210 4068 10210 4268
+Wire Wire Line
+6410 7068 6410 6368
+Wire Wire Line
+6410 6368 6410 5968
+Wire Wire Line
+6410 5968 6410 5468
+Wire Wire Line
+6010 6368 6410 6368
+Connection ~ 6410 5968
+Connection ~ 6410 6368
+Wire Wire Line
+6310 7068 6310 6168
+Wire Wire Line
+6310 6168 6310 5868
+Wire Wire Line
+6010 6168 6310 6168
+Connection ~ 6310 6168
+Wire Wire Line
+4110 2468 6310 2468
+Wire Wire Line
+6310 5468 6310 2468
+Wire Wire Line
+6410 5068 6410 2668
+Wire Wire Line
+6410 2668 4110 2668
+$EndSCHEMATC

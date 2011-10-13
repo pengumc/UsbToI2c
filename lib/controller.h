@@ -114,7 +114,9 @@ void CALIBRATE_CONTROLLER(struct CONTROLLER_DATA* cdat);
 //set up the required ports and spi registers, also set initial mode
 uint8_t INIT_CONTROLLER(struct CONTROLLER_DATA *cdat,uint8_t setmode);
   //returns 0 if controller reports an other mode than requested
-  
-
-
+ 
+//check if not all sticks are 0xFF (which means the thing is not in
+//analog mode or not connected at all 
+uint8_t HAS_VALID_ANALOG_DATA(struct CONTROLLER_DATA *cdat);
+  //returns 1 if valid, 0 otherwise
 #endif

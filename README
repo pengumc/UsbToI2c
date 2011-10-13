@@ -7,3 +7,7 @@ bin/commandline.exe : cmdline utility for win32 systems (requires libusb devel-f
 
 src/python_cmdline/UsbCmdLine.py : python commandline utility, unfinished
 note: requires pyUsb 1.0 or higher (lower versions installed via a package manager appear to break stuff)
+
+leds:
+red (PB0): on when triangle is pressed on the controler (no real function)
+green: on when readin from I2C bus

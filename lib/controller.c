@@ -96,6 +96,23 @@ uint8_t INIT_CONTROLLER(struct CONTROLLER_DATA *cdat,uint8_t setmode){
   }
 }
 
+uint8_t HAS_VALID_ANALOG_DATA(struct CONTROLLER_DATA *cdat){
+    if( cdat->Lx == 0xFF &&
+        cdat->Ly == 0xFF &&
+        cdat->Rx == 0xFF &&
+        cdat->Ry == 0xFF){
+        
+        return 0;
+    }else{
+        return 1;
+    }
+        
+    
+    
+
+}
+
+
 
 
 
