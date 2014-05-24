@@ -23,13 +23,15 @@
 #include "usbdrv.h"
 #include "requests.h"       /* The custom request numbers */
 
+#include "default.h" //some useful macros
 #include "i2c_header.h" //defenitions for buffer lengths and addresses
+#include "controller.h"
 
-#define SET(x,y) (x|=(1<<y))
-#define CLR(x,y) (x&=(~(1<<y)))
-#define CHK(x,y) (x&(1<<y)) 
-#define TOG(x,y) (x^=(1<<y))
-
+//#define SET(x,y) (x|=(1<<y))
+//#define CLR(x,y) (x&=(~(1<<y)))
+//#define CHK(x,y) (x&(1<<y)) 
+//#define TOG(x,y) (x^=(1<<y))
+//defined in default.h
 
 //----------------------------------------------------------------------------
 //Global Variables
@@ -51,6 +53,9 @@ uint8_t ad_count;
 
 void (*jump_to_boot)(void) = 0x0C00;
 
+//controller data
+struct CONTROLLER_DATA pscon;
+
 //----------------------------------------------------------------------------
 //Functions
 //----------------------------------------------------------------------------
@@ -70,139 +75,149 @@ uint8_t bytes_remaining;
 uint8_t buffer_pos;
 #define USB_MSG_LENGTH BUFLEN_SERVO_DATA +1
 usbMsgLen_t usbFunctionSetup(uchar data[8]){
-	register uint8_t i;
-	static uchar dataBuffer[USB_MSG_LENGTH];
-	usbRequest_t    *rq = (void *)data;
-	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR){
-		switch(rq->bRequest){
-		case CUSTOM_RQ_GET_DATA:
-			dataBuffer[0] = adc[0];
-      dataBuffer[1] = adc[1];
-			dataBuffer[2] = TWS;
-			dataBuffer[3] = 0;
-			dataBuffer[4] = 0;
-			dataBuffer[5] = 0;
-			dataBuffer[6] = 0;
-			usbMsgPtr = dataBuffer;
-			return USB_MSG_LENGTH; 
-		case CUSTOM_RQ_GET_POS:
-			if(mode==2){
-				for(i=0;i<BUFLEN_SERVO_DATA;i++){
-					dataBuffer[i] = CUSTOM_RQ_GET_POS; 
-					//returning the buffer filled with the request
-					//indicates we're busy with reading from I2C
-				}
-			}else{
-				for(i=0;i<BUFLEN_SERVO_DATA;i++){
-					dataBuffer[i] = recv[i];
-				}
-			}
-			usbMsgPtr = dataBuffer;
-			return USB_MSG_LENGTH;		
-		case CUSTOM_RQ_LOAD_POS_FROM_I2C:
-			if(mode){ //not ready for next I2C command
-				for(i=0;i<BUFLEN_SERVO_DATA;i++){
-					dataBuffer[i] = CUSTOM_RQ_LOAD_POS_FROM_I2C;
-				}
-				usbMsgPtr = dataBuffer;
-				return USB_MSG_LENGTH;		
-			}else{
-				mode = 2;
-				return 0;
-			}
-		case CUSTOM_RQ_RESET:
-			reset = 1;
-			return 0;
-		case CUSTOM_RQ_SET_DATA:
-			buffer_pos=0;
-			bytes_remaining=rq->wLength.word;
-			return USB_NO_MSG;
-		}
-	}
-	return 0;   
+    register uint8_t i;
+    static uchar dataBuffer[USB_MSG_LENGTH];
+    usbRequest_t    *rq = (void *)data;
+    if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR){
+        switch(rq->bRequest){
+        case CUSTOM_RQ_GET_DATA:
+            dataBuffer[0] = mode;
+            dataBuffer[1] = pscon.SS_Dpad;
+            dataBuffer[2] = pscon.Shoulder_Shapes;
+            dataBuffer[3] = adc[0];
+            dataBuffer[4] = adc[1];
+            if(HAS_VALID_ANALOG_DATA(&pscon)){
+                dataBuffer[5] = pscon.Rx;
+                dataBuffer[6] = pscon.Ry;
+                dataBuffer[7] = pscon.Lx;
+                dataBuffer[8] = pscon.Ly;
+            }else{
+                dataBuffer[5] = 128;
+                dataBuffer[6] = 128;
+                dataBuffer[7] = 128;
+                dataBuffer[8] = 128;
+            }
+            usbMsgPtr = dataBuffer;
+            return USB_MSG_LENGTH; 
+        case CUSTOM_RQ_GET_POS:
+            if(mode==2){
+                for(i=0;i<BUFLEN_SERVO_DATA;i++){
+                    dataBuffer[i] = CUSTOM_RQ_GET_POS; 
+                    //returning the buffer filled with the request
+                    //indicates we're busy with reading from I2C
+                }
+            }else{
+                for(i=0;i<BUFLEN_SERVO_DATA;i++){
+                    dataBuffer[i] = recv[i];
+                }
+            }
+            usbMsgPtr = dataBuffer;
+            return USB_MSG_LENGTH;      
+        case CUSTOM_RQ_LOAD_POS_FROM_I2C:
+            if(mode){ //not ready for next I2C command
+                for(i=0;i<BUFLEN_SERVO_DATA;i++){
+                    dataBuffer[i] = CUSTOM_RQ_LOAD_POS_FROM_I2C;
+                }
+                dataBuffer[0] = mode;
+                usbMsgPtr = dataBuffer;
+                return USB_MSG_LENGTH;      
+            }else{
+                mode = 2;
+                return 0;
+            }
+        case CUSTOM_RQ_RESET:
+            reset = 1;
+            return 0;
+        case CUSTOM_RQ_SET_DATA:
+            buffer_pos=0;
+            bytes_remaining=rq->wLength.word;
+            return USB_NO_MSG;
+        }
+    }
+    return 0;   
 }
 
 uchar usbFunctionWrite(uchar * data, uchar len){
-	uchar b;
-	if(len>bytes_remaining) bytes_remaining = len;
-	bytes_remaining -= len;
-	for(b=0;b<len;b++){
-		tran[buffer_pos++] = data[b];
-	}
-	if(bytes_remaining==0){
-		mode=1;
-		return 1;
-	}	else return 0;
+    uchar b;
+    if(len>bytes_remaining) bytes_remaining = len;
+    bytes_remaining -= len;
+    for(b=0;b<len;b++){
+        tran[buffer_pos++] = data[b];
+    }
+    if(bytes_remaining==0){
+        mode=1;
+        return 1;
+    }   else return 0;
 }
 void I2Cmaster(){
   //Master
   if(CHK(TWCR,TWINT)){
-		TOG(PORTD,PD7);
-		TWS = TW_STATUS;
+//        TOG(PORTD,PD7);//green
+        TWS = TW_STATUS;
     switch(TWS){
     case 0x10:  //start or rep start send, determine mode and send SLA
     case 0x08: 
-			if(mode == 1){
-				t_index =0;
-				TWDR = SLA_W;
-			} 
-			if(mode ==2 ){
-				r_index =0;
-				TWDR = SLA_R;
-			}
-			TWACK;
-			break;
+            if(mode == 1){
+                t_index =0;
+                TWDR = SLA_W;
+            } 
+            if(mode ==2 ){
+                r_index =0;
+                TWDR = SLA_R;
+            }
+            TWACK;
+            break;
 //--------------- MT ---------------------------------------------------------
-		case 0x18: // SLA_W acked
-			//load first data
-			TWDR = tran[0];
-			t_index=1;
-			TWACK;
-			break;
-		case 0x20: //SLA_W not acked for some reason (dc?), try again
-			TWCR =0;
+        case 0x18: // SLA_W acked
+            //load first data
+            TWDR = tran[0];
+            t_index=1;
+            TWACK;
+            break;
+        case 0x20: //SLA_W not acked for some reason (dc?), try again
+            TWCR =0;
       TWSTART;
-			break;
-		case 0x28: //data acked
-			if(t_index < BUFLEN_SERVO_DATA){
-				TWDR =  tran[t_index];
-				t_index++;
-				TWACK;
-				break;
-			} else {
-				//reset mode
-				mode=0;
-				TWSTART;
-				break;
-			}
+            break;
+        case 0x28: //data acked
+            if(t_index < BUFLEN_SERVO_DATA){
+                TWDR =  tran[t_index];
+                t_index++;
+                TWACK;
+                break;
+            } else {
+                //reset mode
+                mode=0;
+                TWSTART;
+                break;
+            }
     case 0x38: //what!?
-		case 0x30: //data nacked, could be faulty buffer, could be dc, restart
+        case 0x30: //data nacked, could be faulty buffer, could be dc, restart
       TWCR = 0;
       TWSTART;
       break;
 //-------------------------MR ------------------------------------------------
-		case 0x40:	//SLA_R acked, get ready for data
-			TWACK;
-			break;
+        case 0x40:  //SLA_R acked, get ready for data
+            TWACK;
+            break;
     case 0x48: //SLA_R not acked, smack some sense into it
       TWSTART;
       break;
-		case 0x50: //non-last data acked
-			recv[r_index] = TWDR;
-			r_index++;
-			if(r_index < BUFLEN_SERVO_DATA){
-				TWACK;
-			} else {
-				TWNACK;
-				r_index =BUFLEN_SERVO_DATA;
-			}
-			break;
-		case 0x58: //last data not acked, as it should be
-			mode = TW_WRITE;
-			TWSTART;
-			mode =0;
-			break;
-			
+        case 0x50: //non-last data acked
+            recv[r_index] = TWDR;
+            r_index++;
+            if(r_index < BUFLEN_SERVO_DATA){
+                TWACK;
+            } else {
+                TWNACK;
+                r_index =BUFLEN_SERVO_DATA;
+            }
+            break;
+        case 0x58: //last data not acked, as it should be
+            mode = TW_WRITE;
+            TWSTART;
+            mode =0;
+            break;
+            
 //--------------------- bus error---------------------------------------------
     case 0x00:
       TWRESET;
@@ -217,8 +232,8 @@ void reconnectUSB(){
 usbDeviceDisconnect();
 register uint8_t i=0;
 while(--i){
-	wdt_reset();
-	_delay_ms(1);
+    wdt_reset();
+    _delay_ms(1);
 }
 usbDeviceConnect();
 
@@ -234,10 +249,15 @@ reconnectUSB();
 //I2C
   TWBR = 10;
   TWCR = (1<<TWEN)|(1<<TWEA)|(1<<TWSTA);
+//playstation controller
+    INIT_CONTROLLER(&pscon, ANALOG);
 //timer
-	TCCR1B |= (1<<WGM12)|(1<<CS11);
-	TIMSK1 |= (1<<OCIE1A);
-	OCR1A = 31250;
+    TCCR1B |= (1<<WGM12)|(1<<CS11);
+    TIMSK1 |= (1<<OCIE1A);
+    OCR1A = 31250;
+//ADC
+    ADMUX = 0x20;//(0<<REFS0)|(1<<ADLAR); //use AREF and adjust left (fill ADCH)
+    ADCSRA |= 0x07 | (1<<ADEN)|(1<<ADSC);//prescale clock  by 128    
 sei();
 //led
   SET(DDRD,PD7);
@@ -248,27 +268,41 @@ sei();
 //MAIN LOOP
 //----------------------------------------------------------------------------
 while(1){
-	//reset if necessary
-	if(!reset) wdt_reset();
-	
-  //only continue I2C transmission if there's a change to be send
-	if(mode) I2Cmaster();
-	
-	//handle usb requests
-	usbPoll();
-	
+//reset if necessary
+    if(!reset) wdt_reset();
 
-	//jump to bootloader when D6 is pulled high, not used atm
-  // if(CHK(PIND,PD6)){
-		// TCCR1B =0;
-		// TIMSK1 =0;
-		// jump_to_boot();
-	// }
+//poll the playstation controller   
+   POLL_CONTROLLER(&pscon);
+   if(!CHK(pscon.Shoulder_Shapes,TRIANGLE)){
+       SET(PORTB,PB0);
+       SET_ANALOG(&pscon);
+   }else CLR(PORTB,PB0);
+    DelaySmall;        
 
-	}//main loop end
+//only continue I2C transmission if there's a change to be send
+    if(mode) I2Cmaster();
+    if(mode == 2) SET(PORTD,PD7);
+    else CLR(PORTD,PD7);
+
+//handle usb requests
+    usbPoll();
+
+//store ADC result and 
+//change channels if a conversion has been completed
+	if(!CHK(ADCSRA,ADSC)) {
+		adc[mux] = ADCH;
+		mux++;
+		if (mux == NUMBER_OF_ADC_CHANNELS) mux=0;
+		ADMUX &= 0xF0; //clear mux
+		ADMUX |= mux;
+		SET(ADCSRA,ADSC);//start next conversion
+	}
+    
+
+    }//main loop end
 }//main end
 
 ISR(TIMER1_COMPA_vect){
-	CLR(PORTD,PD7); //green
-	//CLR(PORTB,PB0); //red
+    //CLR(PORTD,PD7); //green
+    //CLR(PORTB,PB0); //red
 }
