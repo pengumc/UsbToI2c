@@ -12,14 +12,14 @@ NAME = UsbMaster
 
 #for the love of god, keep the linking order!
 OBJECTS = usbdrv.o usbdrvasm.o oddebug.o $(NAME).o controller.o
-CFLAGS = -DF_CPU=$(F_CPU) -std=c99 -Wall -Os -mmcu=$(MMCU) -Ilib/usbdrv -I. -Isrc -Ilib
+CFLAGS = -DF_CPU=$(F_CPU) -std=c99 -Wall -Os -mmcu=$(MMCU) -Iinclude/usbdrv -I. -Isrc -Iinclude
 CC = avr-gcc
 SIZE = avr-size
 OBJCOPY = avr-objcopy
 
-vpath %.c ./lib/usbdrv ./src/firmware ./lib
-vpath %.h ./lib/usbdrv ./lib
-vpath %.S ./lib/usbdrv 
+vpath %.c ./include/usbdrv ./src/firmware ./include
+vpath %.h ./include/usbdrv ./include
+vpath %.S ./include/usbdrv 
 
 .PHONY: all clean test
 all: bin/$(NAME).hex
