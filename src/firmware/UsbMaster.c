@@ -129,10 +129,16 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
         return 0;
       }
       case CUSTOM_RQ_SET_DATA: {
-        buffer_pos=0;
-        bytes_remaining=rq->wLength.word;
+        buffer_pos = 0;
+        bytes_remaining = rq->wLength.word;
         return USB_NO_MSG;
       }
+    }
+  } else if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
+    if (rq->bRequest == USBRQ_HID_SET_REPORT) {
+      buffer_pos = 0;
+      bytes_remaining = rq->wLength.word;
+      return USB_NO_MSG;
     }
   }
   return 0;
@@ -140,16 +146,63 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 
 // -------------------------------------------------------------usbFunctionWrite
 uchar usbFunctionWrite(uchar * data, uchar len) {
+  // first pass
+  //  13 bytes remaining 
+  //  len = 8 (7 useful)
+  // 2nd:
+  //  5 remaining
+  // len = 5 (5 useful)
+  // buffer_pos = 7, skip 
+  uchar store_start = 0;
+  uchar store_end = len;
+  if (buffer_pos == 0) {  // if we're at the first byte
+    switch (data[0]) {
+      case CUSTOM_RQ_RESET: {
+        reset = 1;
+        return 1;  // no need to read the rest of the data
+      }
+      case CUSTOM_RQ_GET_DATA: {
+        // TODO(michiel): implement
+        return 1;
+      }
+      case CUSTOM_RQ_GET_POS: { 
+        // TODO(michiel): implement
+        return 1;
+      }
+      case CUSTOM_RQ_LOAD_POS_FROM_I2C: {
+        // TODO(michiel): implement
+        return 1;
+      }
+      case CUSTOM_RQ_SET_DATA: {
+        ++store_start; // 1st: 1
+        break;
+      }
+      default: {
+        return 1;
+      }
+    }
+  }
   uchar b;
-  if (len > bytes_remaining) bytes_remaining = len;
-  bytes_remaining -= len;
-  for(b = 0; b < len; ++b){
+  // 1st: if 8 - 1 > 12
+  // 2nd: if 5 - 0 > 5
+  if (len - store_start > bytes_remaining) {
+    bytes_remaining = len - store_start;
+    // 1st: storing data[1] ... data[7] at 0...6
+    // 2nd: storing data[0] ... data[4] at 7...11
+  }
+  for(b = store_start; b < store_end; ++b) {
     tran[buffer_pos++] = data[b];
   }
-  if (bytes_remaining == 0) {
-    mode=1;
+  // 1st: buffer_pos = 7
+  // 2nd: buffer_pos = 12
+  bytes_remaining -= len;
+  // 1st: remaining = 13 - 8 = 5
+  // 2nd: remaining = 5 - 5 = 0
+  if (bytes_remaining == 0 || buffer_pos >= BUFLEN_SERVO_DATA) {
+    mode = 1;
     return 1;
   } else {
+    // more bytes to read
     return 0;
   }
 }
@@ -304,6 +357,10 @@ int main() {
       ADMUX |= mux;
       SET(ADCSRA,ADSC);//start next conversion
     }
-
   }  // main loop end
 } // main end
+
+ISR(TIMER1_COMPA_vect){
+  //CLR(PORTD,PD7); //green
+  //CLR(PORTB,PB0); //red
+}

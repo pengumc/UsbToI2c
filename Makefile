@@ -1,6 +1,6 @@
 # Name: Makefile
 # Author: Michiel van der Coelen
-# date: 2011-04-01
+# date: 2014-05-24
 # tabsize: 2
  
 MMCU = atmega88
