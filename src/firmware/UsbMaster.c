@@ -56,17 +56,23 @@ uint8_t bytes_remaining;
 uint8_t buffer_pos;
 
 // -----------------------------------------------------------USB HID Descriptor
-PROGMEM char usbHidReportDescriptor[22] = {    /* USB report descriptor */
-  0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
-  0x09, 0x01,                    // USAGE (Vendor Usage 1)
-  0xa1, 0x01,                    // COLLECTION (Application)
-  0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
-  0x26, 0xff, 0x00,              //   LOGICAL_MAXIMUM (255)
-  0x75, 0x08,                    //   REPORT_SIZE (8)
-  0x95, 0x01,                    //   REPORT_COUNT (1)
-  0x09, 0x00,                    //   USAGE (Undefined)
-  0xb2, 0x02, 0x01,              //   FEATURE (Data,Var,Abs,Buf)
-  0xc0                           // END_COLLECTION
+PROGMEM char usbHidReportDescriptor[32] = {
+  0x06, 0x9c, 0xff,     /* Usage Page (Vendor Defined)                     */
+  0x09, 0x01,           /* Usage (Vendor Defined)                          */
+  0xa1, 0x01,           /* Collection (Vendor Defined)                     */
+  0x09, 0x02,           /*   Usage (Vendor Defined)                        */
+  0x75, 0x08,           /*   Report Size (8)                               */
+  0x95, 0x08,           /*   Report Count (8)       */
+  0x15, 0x00,           /*   Logical Minimum (0)                           */
+  0x25, 0xff,           /*   Logical Maximum (255)                         */
+  0x81, 0x02,           /*   Input (Data, Variable, Absolute)              */
+  0x09, 0x03,           /*   Usage (Vendor Defined)                        */
+  0x75, 0x08,           /*   Report Size (8)                               */
+  0x95, 0x0C,           /*   Report Count (12)       */
+  0x15, 0x00,           /*   Logical Minimum (0)                           */
+  0x25, 0xff,           /*   Logical Maximum (255)                         */
+  0x91, 0x02,           /*   Output (Data, Variable, Absolute)             */
+  0xc0                  /* End Collection                                  */
 };
 
 // -------------------------------------------------------------usbFunctionSetup
