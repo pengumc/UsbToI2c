@@ -48,14 +48,17 @@ uint8_t mode = 0;
 // 0: do nothing
 // 1: write buffer to I2C
 // 2: read from I2C
-uint8_t output_mode = 0;
+#define OUTPUT_MODE_NOTHING 0
+#define OUTPUT_MODE_FIRST8 1
+#define OUTPUT_MODE_LAST4 2
+#define OUTPUT_MODE_I2C_BUSY 3
+// buy signal no longer needed.
+#define OUTPUT_MODE_I2C_ERROR 4
+// I2C will just keep trying, so this never happens
+#define OUTPUT_MODE_I2C_SUCCESS 5
+#define OUTPUT_MODE_DATA 6
+uint8_t output_mode = OUTPUT_MODE_NOTHING;
 // state for outputting 12 bits in 8 bit increments
-// 0: nothing to do
-// 1: set next outgoing data to 1st 8 bits of databuffer
-// 2: set next outgoing data to bit 8 to 12
-// 3: set next outgoing data to I2C busy
-// 4: set next outgoing data to I2C error
-// 5: set next outgoing data to pscon+adc
 
 uint8_t reset = 0;  // set to 1 to let the watchdog timer expire and reset.
 uint8_t adc[NUMBER_OF_ADC_CHANNELS]; //buffer to store adc values
@@ -90,67 +93,7 @@ PROGMEM char usbHidReportDescriptor[32] = {
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
   register uint8_t i;
   usbRequest_t    *rq = (void *)data;
-  if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR) {
-    switch(rq->bRequest) {
-      case CUSTOM_RQ_GET_DATA: {
-        dataBuffer[0] = mode;
-        dataBuffer[1] = pscon.SS_Dpad;
-        dataBuffer[2] = pscon.Shoulder_Shapes;
-        dataBuffer[3] = adc[0];
-        dataBuffer[4] = adc[1];
-        if (HAS_VALID_ANALOG_DATA(&pscon)) {
-          dataBuffer[5] = pscon.Rx;
-          dataBuffer[6] = pscon.Ry;
-          dataBuffer[7] = pscon.Lx;
-          dataBuffer[8] = pscon.Ly;
-        } else {
-          dataBuffer[5] = 128;
-          dataBuffer[6] = 128;
-          dataBuffer[7] = 128;
-          dataBuffer[8] = 128;
-        }
-        usbMsgPtr = dataBuffer;
-        return USB_MSG_LENGTH;
-      }
-      case CUSTOM_RQ_GET_POS: {
-        if (mode==2) {
-          for(i = 0; i < BUFLEN_SERVO_DATA; ++i) {
-            dataBuffer[i] = CUSTOM_RQ_GET_POS;
-            // returning the buffer filled with the request
-            // indicates we're busy with reading from I2C
-          }
-        } else {
-          for(i = 0; i < BUFLEN_SERVO_DATA; ++i) {
-            dataBuffer[i] = recv[i];
-          }
-        }
-        usbMsgPtr = dataBuffer;
-        return USB_MSG_LENGTH;
-      }
-      case CUSTOM_RQ_LOAD_POS_FROM_I2C: {
-        if (mode) { // not ready for next I2C command
-          for(i = 0; i < BUFLEN_SERVO_DATA; ++i) {
-            dataBuffer[i] = CUSTOM_RQ_LOAD_POS_FROM_I2C;
-          }
-          dataBuffer[0] = mode;
-          usbMsgPtr = dataBuffer;
-          return USB_MSG_LENGTH;
-        } else {
-          mode = 2;
-          return 0;
-        }
-      }
-      case CUSTOM_RQ_RESET: {
-        reset = 1;
-        return 0;
-      }
-      case CUSTOM_RQ_SET_DATA: {
-        buffer_pos = 0;
-        bytes_remaining = rq->wLength.word;
-        return USB_NO_MSG;
-      }
-    }
-  } else if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
+  if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
     if (rq->bRequest == USBRQ_HID_SET_REPORT) {
       buffer_pos = 0;
       bytes_remaining = rq->wLength.word;
@@ -165,28 +108,27 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
   uchar store_start = 0;
   uchar store_end = len;
   if (buffer_pos == 0) {  // if we're at the first byte
+    if (data[0] == CUSTOM_RQ_RESET) {
+      reset = 1;
+      return 1;
+    }
+    if (output_mode | mode) return 1;  // no req allowed if not in 0 0 state
     switch (data[0]) {
-      case CUSTOM_RQ_RESET: {
-        reset = 1;
-        return 1;  // no need to read the rest of the data
-      }
       case CUSTOM_RQ_GET_DATA: {
-        if (output_mode) {
-          // still busy with previous command
-          // TODO(michiel): handle this
+        output_mode = OUTPUT_MODE_DATA;
+        return 1;
+      }
+      case CUSTOM_RQ_GET_POS_L: { 
+        if (mode) { // not ready for next I2C command
+          output_mode = OUTPUT_MODE_I2C_BUSY;
         } else {
-          output_mode = 5;
+          mode = 2;  // this will cause a load from I2C
         }
         return 1;
       }
-      case CUSTOM_RQ_GET_POS: { 
-        if (mode) { // not ready for next I2C command
-          output_mode = 3;
-          return 1;
-        } else {
-          mode = 2;  // this will cause a load from I2C
-          return 1;
-        }
+      case CUSTOM_RQ_GET_POS_H: {
+        output_mode = OUTPUT_MODE_LAST4;
+        return 1;
       }
       case CUSTOM_RQ_SET_DATA: {
         ++store_start;
@@ -207,6 +149,7 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
   bytes_remaining -= len;
   if (bytes_remaining == 0 || buffer_pos >= BUFLEN_SERVO_DATA) {
     mode = 1;
+    output_mode = OUTPUT_MODE_NOTHING;
     return 1;
   } else {
     // more bytes to read
@@ -216,35 +159,38 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
 
 // -------------------------------------------------------------setNextUsbOutput
 void setNextUsbOutput() {
-  if (usbInterruptIsReady()) {
+  if (usbInterruptIsReady() && mode == 0 && output_mode != 0) {
     switch (output_mode) {
-      case 1: {
+      case OUTPUT_MODE_FIRST8: {
+        for(uint8_t i = 0; i < BUFLEN_SERVO_DATA; ++i) {
+          dataBuffer[i] = recv[i];
+        }
         usbSetInterrupt(dataBuffer, 8);
-        output_mode = 2;
+        output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
-      case 2: {
-        usbSetInterrupt(dataBuffer[8], 8);
-        output_mode = 0;
+      case OUTPUT_MODE_LAST4: {
+        usbSetInterrupt(&dataBuffer[8], 8);
+        output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
-      case 3: {
+      case OUTPUT_MODE_I2C_BUSY: {
         for (uint8_t i = 0; i < 8; ++i) {
           dataBuffer[i] = USB_DATA_I2C_BUSY;
         }
         usbSetInterrupt(dataBuffer, 8);
-        output_mode = 0;
+        output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
-      case 4: {
+      case OUTPUT_MODE_I2C_ERROR: {
         for (uint8_t i = 0; i < 8; ++i) {
           dataBuffer[i] = USB_DATA_I2C_ERROR;
         }
         usbSetInterrupt(dataBuffer, 8);
-        output_mode = 0;
+        output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
-      case 5: {
+      case OUTPUT_MODE_DATA: {
         dataBuffer[0] = mode;
         dataBuffer[1] = pscon.SS_Dpad;
         dataBuffer[2] = pscon.Shoulder_Shapes;
@@ -262,12 +208,23 @@ void setNextUsbOutput() {
           dataBuffer[8] = 128;
         }
         usbSetInterrupt(dataBuffer, 8);
+        output_mode = OUTPUT_MODE_NOTHING;
+        break;
       }
-      case 0: {
-        // no data
+      case OUTPUT_MODE_I2C_SUCCESS: {
+        dataBuffer[0] = 's';
+        dataBuffer[1] = 'u';
+        dataBuffer[2] = 'c';
+        dataBuffer[3] = 'c';
+        dataBuffer[4] = 'e';
+        dataBuffer[5] = 's';
+        dataBuffer[6] = 's';
+        dataBuffer[7] = ' ';
+        usbSetInterrupt(dataBuffer, 8);
+        // continue to default
       }
       default: {
-        output_mode = 0;
+        output_mode = OUTPUT_MODE_NOTHING;
       }
     }
   }
@@ -312,6 +269,7 @@ void I2Cmaster() {
         } else {
           // reset mode
           mode = 0;
+          output_mode = OUTPUT_MODE_I2C_SUCCESS;
           TWSTART;
           break;
         }
@@ -346,6 +304,7 @@ void I2Cmaster() {
         mode = TW_WRITE;
         TWSTART;
         mode = 0;
+        output_mode = OUTPUT_MODE_FIRST8;
         break;
       }
 // ---------------------- bus error---------------------------------------------
@@ -389,9 +348,9 @@ int main() {
   ADMUX = 0x20;  // (0<<REFS0)|(1<<ADLAR); //use AREF, adjust left (fill ADCH)
   ADCSRA |= 0x07 | (1<<ADEN)|(1<<ADSC);//prescale clock  by 128
   // led
-  SET(DDRD,PD7);
-  SET(DDRB,PB0);
-  SET(DDRB, PB0); //red
+  SET(DDRD,PD7); // green, indicates I2C is busy
+  SET(DDRB,PB0); // red, indicates data is ready to be read
+  SET(PORTB, PB0);
 
   sei();
   while(1) {
@@ -400,20 +359,24 @@ int main() {
     // poll the playstation controller
     POLL_CONTROLLER(&pscon);
     if (!CHK(pscon.Shoulder_Shapes,TRIANGLE)) {
-    TOG(PORTB,PB0);
-    SET_ANALOG(&pscon);
-    } else CLR(PORTB,PB0);
+      SET_ANALOG(&pscon);
+    }
     DelaySmall;
 
     // only continue I2C transmission if there's a change to be send
-    if (mode) I2Cmaster();
-    if (mode == 2) SET(PORTD,PD7);
-    else CLR(PORTD,PD7);
+    if (mode) {
+      I2Cmaster();
+      SET(PORTD, PD7);
+    } else {
+      CLR(PORTD, PD7);
+    }
 
     // handle usb requests
     setNextUsbOutput();
+    if (usbInterruptIsReady()) CLR(PORTB, PB0);
+    else SET(PORTB, PB0);
     usbPoll();
-    
+
     // store ADC result and
     // change channels if a conversion has been completed
     if (!CHK(ADCSRA,ADSC)) {

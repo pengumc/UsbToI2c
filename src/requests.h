@@ -16,24 +16,14 @@
 #ifndef __REQUESTS_H_INCLUDED__
 #define __REQUESTS_H_INCLUDED__
 
-#define CUSTOM_RQ_SET_STATUS    1
-/* Set the LED status. Control-OUT.
- * The requested status is passed in the "wValue" field of the control
- * transfer. No OUT data is sent. Bit 0 of the low byte of wValue controls
- * the LED.
- */
-
 #define CUSTOM_RQ_GET_DATA    2
-/* Get the current LED status. Control-IN.
- * This control transfer involves a 1 byte data phase where the device sends
- * the current status to the host. The status is in bit 0 of the byte.
- */
+
 #define CUSTOM_RQ_SET_DATA 3
 
 #define CUSTOM_RQ_RESET 4
 
-#define CUSTOM_RQ_LOAD_POS_FROM_I2C 5
+#define CUSTOM_RQ_GET_POS_L 5
 
-#define CUSTOM_RQ_GET_POS 6
+#define CUSTOM_RQ_GET_POS_H 6
 
 #endif /* __REQUESTS_H_INCLUDED__ */
