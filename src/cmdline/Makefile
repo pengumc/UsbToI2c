@@ -1,48 +1,26 @@
-# Name: Makefile
-# Project: hid-custom-rq example
-# Author: Christian Starkjohann
-# Creation Date: 2008-04-06
-# Tabsize: 4
-# Copyright: (c) 2008 by OBJECTIVE DEVELOPMENT Software GmbH
-# License: GNU GPL v2 (see License.txt), GNU GPL v3 or proprietary (CommercialLicense.txt)
-# This Revision: $Id: Makefile 692 2008-11-07 15:07:40Z cs $
+#author: michiel van der Coelen
+#2014
+#compiling a commandline testing utility for UsbToI2C (UsbMaster)
 
+NAME = sendcmd
+EXT = .exe
+CC = gcc
+CFLAGS = -I. -Wall -Wconversion
+LIBS = -L. -lhidapi
+OBJECTS = $(NAME).o
+#`pkg-config libusb-1.0 --cflags`
+#`pkg-config libusb-1.0 --libs`
+ifeq ($(shell uname), Linux)
+	CFLAGS = -I. -Wall -Wconversion 
+	LIBS = -L. -lhidapi-libusb -lusb-1.0
+	EXT = 
+endif
 
-# Concigure the following definitions according to your system.
-# This Makefile has been tested on Mac OS X, Linux and Windows.
+all:$(OBJECTS)
+	$(CC) $(CFLAGS) $(OBJECTS) $(LIBS) -o $(NAME)$(EXT)
 
-# Use the following 3 lines on Unix (uncomment the framework on Mac OS X):
-USBFLAGS = `libusb-config --cflags`
-USBLIBS = `libusb-config --libs`
-EXE_SUFFIX =
-
-# Use the following 3 lines on Windows and comment out the 3 above. You may
-# have to change the include paths to where you installed libusb-win32
-#USBFLAGS = -I/usr/local/include
-#USBLIBS = -L/usr/local/lib -lusb
-#EXE_SUFFIX = .exe
-
-NAME = commandline
-
-OBJECTS = opendevice.o $(NAME).o
-
-CC		= gcc
-CFLAGS	= $(CPPFLAGS) $(USBFLAGS) -O2 -g -Wall -std=c99
-LIBS	= $(USBLIBS)
-
-PROGRAM = $(NAME)$(EXE_SUFFIX)
-
-
-all: ../../bin/$(PROGRAM)
-
-.c.o:
-	$(CC) $(CFLAGS) -c $<
-
-../../bin/$(PROGRAM): $(OBJECTS)
-	$(CC) -o ../../bin/$(PROGRAM) $(OBJECTS) $(LIBS)
-
-strip: $(PROGRAM)
-	strip $(PROGRAM)
+%.o:%.c
+	$(CC) $(CFLAGS) $< -c  -o $@
 
 clean:
-	rm -f *.o $(PROGRAM)
+	rm $(OBJECTS)
