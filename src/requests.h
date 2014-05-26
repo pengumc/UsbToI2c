@@ -16,6 +16,8 @@
 #ifndef __REQUESTS_H_INCLUDED__
 #define __REQUESTS_H_INCLUDED__
 
+#define CUSTOM_RQ_GET_VERSION 1
+
 #define CUSTOM_RQ_GET_DATA    2
 
 #define CUSTOM_RQ_SET_DATA 3

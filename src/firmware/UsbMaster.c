@@ -31,6 +31,9 @@
 //#define TOG(x,y) (x^=(1<<y))
 //defined in default.h
 
+#define VERSION_MAJOR = 0;
+#define VERSION_MINOR = 1;
+
 #define USB_MSG_LENGTH BUFLEN_SERVO_DATA +1
 #define NUMBER_OF_ADC_CHANNELS 2
 #define USB_DATA_I2C_BUSY 6
@@ -57,6 +60,7 @@ uint8_t mode = 0;
 // I2C will just keep trying, so this never happens
 #define OUTPUT_MODE_I2C_SUCCESS 5
 #define OUTPUT_MODE_DATA 6
+#define OUTPUT_MODE_VERSION 7
 uint8_t output_mode = OUTPUT_MODE_NOTHING;
 // state for outputting 12 bits in 8 bit increments
 
@@ -114,6 +118,10 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
     }
     if (output_mode | mode) return 1;  // no req allowed if not in 0 0 state
     switch (data[0]) {
+      case CUSTOM_RQ_GET_VERSION: {
+        output_mode = OUTPUT_MODE_VERSION;
+        return 1;
+      }
       case CUSTOM_RQ_GET_DATA: {
         output_mode = OUTPUT_MODE_DATA;
         return 1;
@@ -221,7 +229,15 @@ void setNextUsbOutput() {
         dataBuffer[6] = 's';
         dataBuffer[7] = ' ';
         usbSetInterrupt(dataBuffer, 8);
-        // continue to default
+        output_mode = OUTPUT_MODE_NOTHING;
+        break;
+      }
+      case OUTPUT_MODE_VERSIOn: {
+        dataBuffer[0] = VERSION_MAJOR;
+        dataBuffer[1] = VERSION_MINOR;
+        usbSetInterrupt(dataBuffer, 8);
+        output_mode = OUTPUT_MODE_NOTHING;
+        break;
       }
       default: {
         output_mode = OUTPUT_MODE_NOTHING;
