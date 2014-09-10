@@ -46,7 +46,7 @@ void usbwrite(hid_device* handle, const uint8_t* b, size_t length) {
 
 void print_usage() {
   printf(" Usage: \n");
-  printf(" sendcmd r|w [cmd] [value for rest of 12 bytes] \n");
+  printf(" sendcmd r|w [cmd] [value for rest of 12 words (12 x 2 bytes)] \n");
   printf(" examples:\n");
   printf("   sendcmd w 3 70 (set all to 70)\n");
   printf("   sendcmd r (read)\n");
@@ -86,9 +86,11 @@ int main(int argc, char** argv) {
       return 1;
     }
     uint8_t cmd = (uint8_t) atoi(argv[2]);
-    uint8_t a = (uint8_t) atoi(argv[3]);
-    uint8_t buf[14] = {0x00, cmd,
-                        a, a, a, a, a, a, a, a, a, a, a, a};
+    uint8_t a = atol(argv[3]) >> 8;
+    uint8_t b = atol(argv[3]);
+    uint8_t buf[26] = {0x00, cmd,
+                        a, b, a, b, a, b, a, b, a, b, a, b,
+                        a, b, a, b, a, b, a, b, a, b, a, b};
     usbwrite(handle, buf, sizeof(buf));
   }
   

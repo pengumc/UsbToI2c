@@ -31,8 +31,8 @@
 //#define TOG(x,y) (x^=(1<<y))
 //defined in default.h
 
-#define VERSION_MAJOR = 0;
-#define VERSION_MINOR = 1;
+#define VERSION_MAJOR 1;
+#define VERSION_MINOR 0;
 
 #define USB_MSG_LENGTH BUFLEN_SERVO_DATA +1
 #define NUMBER_OF_ADC_CHANNELS 2
@@ -53,14 +53,15 @@ uint8_t mode = 0;
 // 2: read from I2C
 #define OUTPUT_MODE_NOTHING 0
 #define OUTPUT_MODE_FIRST8 1
-#define OUTPUT_MODE_LAST4 2
-#define OUTPUT_MODE_I2C_BUSY 3
+#define OUTPUT_MODE_SECOND8 2
+#define OUTPUT_MODE_THIRD8 3
+#define OUTPUT_MODE_I2C_BUSY 4
 // buy signal no longer needed.
-#define OUTPUT_MODE_I2C_ERROR 4
+#define OUTPUT_MODE_I2C_ERROR 5
 // I2C will just keep trying, so this never happens
-#define OUTPUT_MODE_I2C_SUCCESS 5
-#define OUTPUT_MODE_DATA 6
-#define OUTPUT_MODE_VERSION 7
+#define OUTPUT_MODE_I2C_SUCCESS 6
+#define OUTPUT_MODE_DATA 7
+#define OUTPUT_MODE_VERSION 8
 uint8_t output_mode = OUTPUT_MODE_NOTHING;
 // state for outputting 12 bits in 8 bit increments
 
@@ -86,7 +87,7 @@ PROGMEM char usbHidReportDescriptor[32] = {
   0x81, 0x02,           /*   Input (Data, Variable, Absolute)              */
   0x09, 0x03,           /*   Usage (Vendor Defined)                        */
   0x75, 0x08,           /*   Report Size (8)                               */
-  0x95, 0x0D,           /*   Report Count (13)       */
+  0x95, 0x0D,           /*   Report Count (25)       */
   0x15, 0x00,           /*   Logical Minimum (0)                           */
   0x25, 0xff,           /*   Logical Maximum (255)                         */
   0x91, 0x02,           /*   Output (Data, Variable, Absolute)             */
@@ -95,7 +96,6 @@ PROGMEM char usbHidReportDescriptor[32] = {
 
 // -------------------------------------------------------------usbFunctionSetup
 usbMsgLen_t usbFunctionSetup(uchar data[8]) {
-  register uint8_t i;
   usbRequest_t    *rq = (void *)data;
   if ((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_CLASS) {
     if (rq->bRequest == USBRQ_HID_SET_REPORT) {
@@ -126,7 +126,7 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
         output_mode = OUTPUT_MODE_DATA;
         return 1;
       }
-      case CUSTOM_RQ_GET_POS_L: { 
+      case CUSTOM_RQ_GET_POS_0_TO_3: { 
         if (mode) { // not ready for next I2C command
           output_mode = OUTPUT_MODE_I2C_BUSY;
         } else {
@@ -134,8 +134,12 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
         }
         return 1;
       }
-      case CUSTOM_RQ_GET_POS_H: {
-        output_mode = OUTPUT_MODE_LAST4;
+      case CUSTOM_RQ_GET_POS_4_TO_7: {
+        output_mode = OUTPUT_MODE_SECOND8;
+        return 1;
+      }
+      case CUSTOM_RQ_GET_POS_8_TO_11: {
+        output_mode = OUTPUT_MODE_THIRD8;
         return 1;
       }
       case CUSTOM_RQ_SET_DATA: {
@@ -170,15 +174,26 @@ void setNextUsbOutput() {
   if (usbInterruptIsReady() && mode == 0 && output_mode != 0) {
     switch (output_mode) {
       case OUTPUT_MODE_FIRST8: {
-        for(uint8_t i = 0; i < BUFLEN_SERVO_DATA; ++i) {
+        for(uint8_t i = 0; i < 8; ++i) {
           dataBuffer[i] = recv[i];
         }
         usbSetInterrupt(dataBuffer, 8);
         output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
-      case OUTPUT_MODE_LAST4: {
-        usbSetInterrupt(&dataBuffer[8], 8);
+      case OUTPUT_MODE_SECOND8: {
+        for (uint8_t i = 8; i < 16; ++i) {
+          dataBuffer[i-8] = recv[i];
+        }
+        usbSetInterrupt(dataBuffer, 8);
+        output_mode = OUTPUT_MODE_NOTHING;
+        break;
+      }
+      case OUTPUT_MODE_THIRD8: {
+        for (uint8_t i = 16; i < BUFLEN_SERVO_DATA; ++i) {
+          dataBuffer[i-16] = recv[i];
+        }
+        usbSetInterrupt(dataBuffer, 8);
         output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
@@ -232,7 +247,7 @@ void setNextUsbOutput() {
         output_mode = OUTPUT_MODE_NOTHING;
         break;
       }
-      case OUTPUT_MODE_VERSIOn: {
+      case OUTPUT_MODE_VERSION: {
         dataBuffer[0] = VERSION_MAJOR;
         dataBuffer[1] = VERSION_MINOR;
         usbSetInterrupt(dataBuffer, 8);
