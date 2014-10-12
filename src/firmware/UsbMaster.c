@@ -214,21 +214,20 @@ void setNextUsbOutput() {
         break;
       }
       case OUTPUT_MODE_DATA: {
-        dataBuffer[0] = mode;
-        dataBuffer[1] = pscon.SS_Dpad;
-        dataBuffer[2] = pscon.Shoulder_Shapes;
-        dataBuffer[3] = adc[0];
-        dataBuffer[4] = adc[1];
+        dataBuffer[0] = pscon.SS_Dpad;
+        dataBuffer[1] = pscon.Shoulder_Shapes;
+        dataBuffer[2] = adc[0];
+        dataBuffer[3] = adc[1];
         if (HAS_VALID_ANALOG_DATA(&pscon)) {
-          dataBuffer[5] = pscon.Rx;
-          dataBuffer[6] = pscon.Ry;
-          dataBuffer[7] = pscon.Lx;
-          dataBuffer[8] = pscon.Ly;
+          dataBuffer[4] = pscon.Rx;
+          dataBuffer[5] = pscon.Ry;
+          dataBuffer[6] = pscon.Lx;
+          dataBuffer[7] = pscon.Ly;
         } else {
+          dataBuffer[4] = 128;
           dataBuffer[5] = 128;
           dataBuffer[6] = 128;
           dataBuffer[7] = 128;
-          dataBuffer[8] = 128;
         }
         usbSetInterrupt(dataBuffer, 8);
         output_mode = OUTPUT_MODE_NOTHING;
