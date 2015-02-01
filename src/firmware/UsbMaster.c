@@ -35,7 +35,7 @@
 #define VERSION_MINOR 0;
 
 #define USB_MSG_LENGTH BUFLEN_SERVO_DATA +1
-#define NUMBER_OF_ADC_CHANNELS 2
+#define NUMBER_OF_ADC_CHANNELS 4
 #define USB_DATA_I2C_BUSY 6
 #define USB_DATA_I2C_ERROR 5
 
@@ -62,6 +62,7 @@ uint8_t mode = 0;
 #define OUTPUT_MODE_I2C_SUCCESS 6
 #define OUTPUT_MODE_DATA 7
 #define OUTPUT_MODE_VERSION 8
+#define OUTPUT_MODE_ADC 9
 uint8_t output_mode = OUTPUT_MODE_NOTHING;
 // state for outputting 12 bits in 8 bit increments
 
@@ -124,6 +125,10 @@ uchar usbFunctionWrite(uchar * data, uchar len) {
       }
       case CUSTOM_RQ_GET_DATA: {
         output_mode = OUTPUT_MODE_DATA;
+        return 1;
+      }
+      case CUSTOM_RQ_GET_ADC: {
+        output_mode = OUTPUT_MODE_ADC;
         return 1;
       }
       case CUSTOM_RQ_GET_POS_0_TO_3: { 
@@ -216,8 +221,8 @@ void setNextUsbOutput() {
       case OUTPUT_MODE_DATA: {
         dataBuffer[0] = pscon.SS_Dpad;
         dataBuffer[1] = pscon.Shoulder_Shapes;
-        dataBuffer[2] = adc[0];
-        dataBuffer[3] = adc[1];
+        dataBuffer[2] = 0;
+        dataBuffer[3] = 0;
         if (HAS_VALID_ANALOG_DATA(&pscon)) {
           dataBuffer[4] = pscon.Rx;
           dataBuffer[5] = pscon.Ry;
@@ -229,6 +234,15 @@ void setNextUsbOutput() {
           dataBuffer[6] = 128;
           dataBuffer[7] = 128;
         }
+        usbSetInterrupt(dataBuffer, 8);
+        output_mode = OUTPUT_MODE_NOTHING;
+        break;
+      }
+      case OUTPUT_MODE_ADC: {
+        dataBuffer[0] = adc[0];
+        dataBuffer[1] = adc[1];
+        dataBuffer[2] = adc[2];
+        dataBuffer[3] = adc[3];
         usbSetInterrupt(dataBuffer, 8);
         output_mode = OUTPUT_MODE_NOTHING;
         break;

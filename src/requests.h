@@ -22,4 +22,6 @@
 
 #define CUSTOM_RQ_GET_POS_8_TO_11 7
 
+#define CUSTOM_RQ_GET_ADC 8
+
 #endif /* __REQUESTS_H_INCLUDED__ */
